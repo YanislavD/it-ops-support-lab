@@ -1,0 +1,65 @@
+services:
+  corporate-website:
+    build: ./services/corporate-website
+    container_name: corporate-website
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+    networks:
+      - lab
+
+  asset-db:
+    image: postgres:16-alpine
+    container_name: asset-db
+    environment:
+      POSTGRES_DB: assets
+      POSTGRES_USER: assets_user
+      POSTGRES_PASSWORD: assets_pass
+    volumes:
+      - asset-db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+    networks:
+      - lab
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U assets_user -d assets"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  asset-api:
+    build: ./services/asset-api
+    container_name: asset-api
+    environment:
+      DB_HOST: asset-db
+      DB_PORT: 5432
+      DB_NAME: assets
+      DB_USER: assets_user
+      DB_PASSWORD: assets_pass
+    ports:
+      - "8082:5000"
+    depends_on:
+      asset-db:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - lab
+
+  admin-portal:
+    build: ./services/admin-portal
+    container_name: admin-portal
+    environment:
+      ASSET_API_URL: http://asset-api:5000
+    ports:
+      - "8083:5001"
+    depends_on:
+      - asset-api
+    restart: unless-stopped
+    networks:
+      - lab
+
+networks:
+  lab:
+    driver: bridge
+
+volumes:
+  asset-db-data:

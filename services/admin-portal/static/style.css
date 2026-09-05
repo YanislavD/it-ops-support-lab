@@ -1,0 +1,98 @@
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font-family: -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: #f5f7fa;
+  color: #1a2233;
+}
+header {
+  background: #0f2942;
+  color: #fff;
+  padding: 1.5rem 2rem;
+}
+header h1 { margin: 0 0 0.75rem; font-size: 1.4rem; }
+nav a {
+  color: #b9c6d6;
+  text-decoration: none;
+  margin-right: 1.25rem;
+  font-size: 0.9rem;
+  padding-bottom: 0.25rem;
+}
+nav a.active, nav a:hover { color: #fff; border-bottom: 2px solid #2ecc71; }
+
+main { max-width: 960px; margin: 0 auto; padding: 2rem; }
+
+.banner.error {
+  background: #fdecea;
+  color: #a12622;
+  border: 1px solid #f5c6c3;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  margin-bottom: 1.25rem;
+}
+
+.stats { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+.stat {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 41, 66, 0.08);
+  flex: 1;
+  text-align: center;
+}
+.stat .num { display: block; font-size: 1.6rem; font-weight: 600; }
+.stat .label { font-size: 0.8rem; color: #6b7686; }
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(15, 41, 66, 0.08);
+  margin-bottom: 1.5rem;
+}
+th, td { text-align: left; padding: 0.65rem 0.9rem; font-size: 0.9rem; border-bottom: 1px solid #eef1f5; }
+th { background: #f0f3f7; font-weight: 600; font-size: 0.8rem; text-transform: uppercase; color: #6b7686; }
+
+.badge { padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.75rem; text-transform: capitalize; }
+.badge.active { background: #e4f8ec; color: #1e8e4b; }
+.badge.in_repair { background: #fff4e0; color: #b3720b; }
+.badge.retired { background: #eceff3; color: #6b7686; }
+
+.link-btn {
+  border: none;
+  background: none;
+  color: #a12622;
+  cursor: pointer;
+  font-size: 0.85rem;
+  padding: 0;
+}
+
+.card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 1.25rem 1.5rem;
+  box-shadow: 0 1px 3px rgba(15, 41, 66, 0.08);
+}
+.card h2 { margin-top: 0; font-size: 1rem; }
+
+.asset-form { display: flex; flex-wrap: wrap; gap: 0.6rem; }
+.asset-form input, .asset-form select {
+  padding: 0.5rem 0.65rem;
+  border: 1px solid #d7dde5;
+  border-radius: 6px;
+  font-size: 0.85rem;
+}
+.asset-form button {
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 6px;
+  background: #0f2942;
+  color: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+}
+.asset-form button:hover { background: #163a5c; }
+
+footer { text-align: center; padding: 1.5rem; color: #9aa5b4; font-size: 0.8rem; }

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>NovaTech Admin Portal</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}" />
+</head>
+<body>
+  <header>
+    <h1>IT Asset Admin Portal</h1>
+    <nav>
+      <a href="{{ url_for('dashboard') }}" class="{{ 'active' if not status_filter }}">All</a>
+      <a href="{{ url_for('dashboard', status='active') }}" class="{{ 'active' if status_filter == 'active' }}">Active</a>
+      <a href="{{ url_for('dashboard', status='in_repair') }}" class="{{ 'active' if status_filter == 'in_repair' }}">In repair</a>
+      <a href="{{ url_for('dashboard', status='retired') }}" class="{{ 'active' if status_filter == 'retired' }}">Retired</a>
+    </nav>
+  </header>
+
+  <main>
+    {% if error %}
+      <div class="banner error">{{ error }}</div>
+    {% endif %}
+
+    <section class="stats">
+      <div class="stat"><span class="num">{{ counts.active }}</span><span class="label">Active</span></div>
+      <div class="stat"><span class="num">{{ counts.in_repair }}</span><span class="label">In repair</span></div>
+      <div class="stat"><span class="num">{{ counts.retired }}</span><span class="label">Retired</span></div>
+    </section>
+
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th><th>Name</th><th>Type</th><th>Status</th><th>Assigned to</th><th>Location</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for asset in assets %}
+        <tr>
+          <td>{{ asset.id }}</td>
+          <td>{{ asset.name }}</td>
+          <td>{{ asset.asset_type }}</td>
+          <td><span class="badge {{ asset.status }}">{{ asset.status }}</span></td>
+          <td>{{ asset.assigned_to or "-" }}</td>
+          <td>{{ asset.location or "-" }}</td>
+          <td>
+            <form method="post" action="{{ url_for('delete_asset', asset_id=asset.id) }}">
+              <button type="submit" class="link-btn">Remove</button>
+            </form>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7">No assets found.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <section class="card">
+      <h2>Register new asset</h2>
+      <form method="post" action="{{ url_for('create_asset') }}" class="asset-form">
+        <input type="text" name="name" placeholder="Name (e.g. MacBook Pro 14)" required />
+        <input type="text" name="asset_type" placeholder="Type (e.g. laptop)" required />
+        <select name="status">
+          <option value="active">active</option>
+          <option value="in_repair">in_repair</option>
+          <option value="retired">retired</option>
+        </select>
+        <input type="text" name="assigned_to" placeholder="Assigned to (optional)" />
+        <input type="text" name="location" placeholder="Location (optional)" />
+        <button type="submit">Add asset</button>
+      </form>
+    </section>
+  </main>
+
+  <footer>admin-portal &rarr; asset-api &rarr; asset-db</footer>
+</body>
+</html>
