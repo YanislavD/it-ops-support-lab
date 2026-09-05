@@ -1,0 +1,20 @@
+groups:
+  - name: service-availability
+    rules:
+      - alert: ServiceDown
+        expr: probe_success == 0
+        for: 30s
+        labels:
+          severity: critical
+        annotations:
+          summary: "{{ $labels.service }} is down"
+          description: "Blackbox probe against {{ $labels.instance }} ({{ $labels.service }}) has been failing for more than 30 seconds."
+
+      - alert: ServiceSlowResponse
+        expr: probe_duration_seconds > 1
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: "{{ $labels.service }} is responding slowly"
+          description: "{{ $labels.instance }} ({{ $labels.service }}) took {{ $value }}s to respond, above the 1s threshold."

@@ -25,7 +25,7 @@ realistic failure mode (API up but DB down, API down but website fine, etc.).
 ## Status
 
 - [x] Module 1 — Services & Docker Compose foundation
-- [ ] Module 2 — Monitoring & Alerting (Prometheus, Blackbox Exporter, Grafana, Alertmanager)
+- [x] Module 2 — Monitoring & Alerting (Prometheus, Blackbox Exporter, Grafana, Alertmanager)
 - [ ] Module 3 — CI/CD (GitHub Actions)
 - [ ] Module 4 — Ticketing & Support (incident → ticket → resolution, Knowledge Base)
 - [ ] Module 5 — Documentation (architecture diagram, demo video, incident report)
@@ -42,6 +42,20 @@ docker compose up --build
 | http://localhost:8082/health | Asset API health check |
 | http://localhost:8082/api/assets | Asset API (JSON) |
 | http://localhost:8083 | Admin portal (dashboard UI) |
+| http://localhost:9090 | Prometheus |
+| http://localhost:9115 | Blackbox Exporter |
+| http://localhost:9093 | Alertmanager |
+| http://localhost:3001 | Grafana (login: `admin` / `admin`) |
+
+> Grafana is published on **3001**, not the usual 3000, to avoid clashing with a
+> locally installed Grafana on this machine. Adjust in `docker-compose.yml` if
+> that's not an issue on your system.
+
+To get real Discord notifications on incidents, copy `.env.example` to `.env`
+and set `DISCORD_WEBHOOK_URL` to a webhook URL from your Discord server
+(Server Settings → Integrations → Webhooks → New Webhook). Without it,
+`alertmanager-discord` will keep restarting — harmless, the rest of the stack
+still works, alerts just won't be delivered anywhere.
 
 Stop everything:
 
@@ -72,8 +86,36 @@ All services share a single Docker bridge network (`lab`) so they can reach each
 other by service name. Only the app-facing ports are published to the host;
 `asset-db` is reachable only from within the network.
 
+## Monitoring & alerting (Module 2)
+
+```
+ corporate-website ┐
+ asset-api/health  ├──▶ blackbox-exporter ──▶ prometheus ──▶ alertmanager ──▶ alertmanager-discord ──▶ Discord
+ admin-portal      ┘                              │
+                                                    ▼
+                                                 grafana (dashboards)
+```
+
+- **Blackbox Exporter** performs an HTTP GET against each service every 15s
+  (`corporate-website:/`, `asset-api:/health`, `admin-portal:/`) and exposes
+  `probe_success` / `probe_duration_seconds`.
+- **Prometheus** scrapes those metrics and evaluates two alert rules
+  (`monitoring/prometheus/alert.rules.yml`):
+  - `ServiceDown` — `probe_success == 0` for 30s
+  - `ServiceSlowResponse` — `probe_duration_seconds > 1` for 1m
+- **Grafana** (pre-provisioned, no manual setup) shows a "Service Uptime &
+  Response Time" dashboard: per-service UP/DOWN stat panels, a response-time
+  graph, and an uptime timeline.
+- **Alertmanager** routes firing alerts to `alertmanager-discord`, which
+  translates them into a Discord message.
+
+Tested end-to-end by stopping `corporate-website` (`docker stop corporate-website`):
+the Grafana panel flipped to DOWN within 15s, and `ServiceDown` reached
+Alertmanager within the 30s `for` window. Restarting the container auto-resolved
+the alert.
+
 ## Next steps
 
-Module 2 adds Prometheus + Blackbox Exporter to poll `/`, `/health`, and `/` on
-each of the three services, Grafana to visualize uptime/latency, and Alertmanager
-to fire a notification (Telegram/Discord) the moment a service goes down.
+Module 3 adds a GitHub Actions CI/CD pipeline that builds/tests each service
+image before it can be deployed, followed by Module 4's ticketing system wired
+to Alertmanager for automatic incident tickets.
