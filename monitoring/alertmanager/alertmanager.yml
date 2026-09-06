@@ -7,9 +7,22 @@ route:
   group_wait: 10s
   group_interval: 1m
   repeat_interval: 1h
+  # Both child routes match every alert (no "matchers") and both carry
+  # continue: true, so a single alert fans out to Discord AND the ticket
+  # bridge instead of only the first match winning.
+  routes:
+    - receiver: discord
+      continue: true
+    - receiver: ticketing
+      continue: true
 
 receivers:
   - name: discord
     webhook_configs:
       - url: "http://alertmanager-discord:9094"
+        send_resolved: true
+
+  - name: ticketing
+    webhook_configs:
+      - url: "http://ticket-bridge:5002/alert"
         send_resolved: true

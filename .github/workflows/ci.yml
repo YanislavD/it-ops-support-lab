@@ -26,6 +26,9 @@ jobs:
       - name: Lint admin-portal
         run: ruff check services/admin-portal
 
+      - name: Lint ticket-bridge
+        run: ruff check services/ticket-bridge
+
   build-and-test:
     name: Build images & smoke test the stack
     runs-on: ubuntu-latest
@@ -34,7 +37,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Build application images
-        run: docker compose build corporate-website asset-api admin-portal
+        run: docker compose build corporate-website asset-api admin-portal ticket-bridge
 
       - name: Start the stack
         run: docker compose up -d corporate-website asset-db asset-api admin-portal
