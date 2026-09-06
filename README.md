@@ -26,7 +26,7 @@ realistic failure mode (API up but DB down, API down but website fine, etc.).
 
 - [x] Module 1 — Services & Docker Compose foundation
 - [x] Module 2 — Monitoring & Alerting (Prometheus, Blackbox Exporter, Grafana, Alertmanager)
-- [ ] Module 3 — CI/CD (GitHub Actions)
+- [x] Module 3 — CI/CD (GitHub Actions)
 - [ ] Module 4 — Ticketing & Support (incident → ticket → resolution, Knowledge Base)
 - [ ] Module 5 — Documentation (architecture diagram, demo video, incident report)
 
@@ -114,8 +114,24 @@ the Grafana panel flipped to DOWN within 15s, and `ServiceDown` reached
 Alertmanager within the 30s `for` window. Restarting the container auto-resolved
 the alert.
 
+## CI/CD (Module 3)
+
+GitHub Actions workflow: [`.github/workflows/ci.yml`](.github/workflows/ci.yml).
+Runs on every push and pull request to `main`:
+
+1. **lint** — `ruff` static analysis on `asset-api` and `admin-portal`.
+2. **build-and-test** (only if lint passes) — builds all three application
+   images via `docker compose build`, starts the stack, polls each service
+   until reachable, then asserts on the actual response of `/`, `/health`,
+   and `/api/assets`. Logs are dumped on failure; containers are always torn
+   down afterward.
+
+Scope note: there's no real production server to deploy to, so "CD" here
+stops at build + smoke-test rather than an actual deployment step — that's a
+deliberate boundary, not a missing piece.
+
 ## Next steps
 
-Module 3 adds a GitHub Actions CI/CD pipeline that builds/tests each service
-image before it can be deployed, followed by Module 4's ticketing system wired
-to Alertmanager for automatic incident tickets.
+Module 4 adds a ticketing system wired to Alertmanager, so a firing alert
+automatically opens an incident ticket, plus a Knowledge Base of documented
+fixes.
