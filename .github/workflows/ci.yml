@@ -54,17 +54,48 @@ jobs:
             done
           '
 
+      # Each check retries for ~15s and prints the actual response before
+      # failing, since a bare `curl -sf | grep` swallows the response body -
+      # a genuine failure would otherwise show nothing but "exit code 1" in
+      # the log. CI runners are shared/slower than a local machine, so the
+      # asset-api <-> asset-db round trip can flake for a beat even after
+      # the "reachable" wait above has already passed once.
       - name: Smoke test corporate-website
-        run: curl -sf http://localhost:8081/
+        run: |
+          for i in 1 2 3 4 5; do
+            body=$(curl -sf http://localhost:8081/) && exit 0
+            echo "Attempt $i: request failed"; sleep 3
+          done
+          echo "Final response:"; curl -s http://localhost:8081/
+          exit 1
 
       - name: Smoke test asset-api /health
-        run: curl -sf http://localhost:8082/health | grep -q '"status":"ok"'
+        run: |
+          for i in 1 2 3 4 5; do
+            body=$(curl -s http://localhost:8082/health)
+            echo "$body" | grep -q '"status":"ok"' && exit 0
+            echo "Attempt $i: $body"; sleep 3
+          done
+          exit 1
 
       - name: Smoke test asset-api /api/assets
-        run: curl -sf http://localhost:8082/api/assets | grep -q 'asset_type'
+        run: |
+          for i in 1 2 3 4 5; do
+            body=$(curl -s http://localhost:8082/api/assets)
+            echo "$body" | grep -q 'asset_type' && exit 0
+            echo "Attempt $i: $body"; sleep 3
+          done
+          exit 1
 
       - name: Smoke test admin-portal
-        run: curl -sf http://localhost:8083/ | grep -q 'IT Asset Admin Portal'
+        run: |
+          for i in 1 2 3 4 5; do
+            body=$(curl -s http://localhost:8083/)
+            echo "$body" | grep -q 'IT Asset Admin Portal' && exit 0
+            echo "Attempt $i: request did not contain expected text"; sleep 3
+          done
+          echo "Final response:"; echo "$body"
+          exit 1
 
       - name: Dump service logs on failure
         if: failure()
