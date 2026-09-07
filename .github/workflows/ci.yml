@@ -54,47 +54,49 @@ jobs:
             done
           '
 
-      # Each check retries for ~15s and prints the actual response before
-      # failing, since a bare `curl -sf | grep` swallows the response body -
-      # a genuine failure would otherwise show nothing but "exit code 1" in
-      # the log. CI runners are shared/slower than a local machine, so the
-      # asset-api <-> asset-db round trip can flake for a beat even after
-      # the "reachable" wait above has already passed once.
+      # Each check retries for ~25s and prints the actual response before
+      # failing. Every curl call is guarded with `|| true`: this step runs
+      # under `bash -e`, and a *standalone* command failing (not part of an
+      # if/while/&&/|| list) aborts the whole script immediately with curl's
+      # own exit code - which is exactly what silently ate our diagnostics
+      # the first time this broke (exit 56, "failure receiving network
+      # data", with zero "Attempt" lines logged). `|| true` makes sure a
+      # network-level failure just leaves $body empty and lets the loop
+      # actually run and report each attempt, instead of dying on the first.
       - name: Smoke test corporate-website
         run: |
           for i in 1 2 3 4 5; do
-            body=$(curl -sf http://localhost:8081/) && exit 0
-            echo "Attempt $i: request failed"; sleep 3
+            body=$(curl -sf http://localhost:8081/ || true)
+            [ -n "$body" ] && exit 0
+            echo "Attempt $i: request failed or returned nothing"; sleep 5
           done
-          echo "Final response:"; curl -s http://localhost:8081/
           exit 1
 
       - name: Smoke test asset-api /health
         run: |
           for i in 1 2 3 4 5; do
-            body=$(curl -s http://localhost:8082/health)
+            body=$(curl -s http://localhost:8082/health || true)
             echo "$body" | grep -q '"status":"ok"' && exit 0
-            echo "Attempt $i: $body"; sleep 3
+            echo "Attempt $i: $body"; sleep 5
           done
           exit 1
 
       - name: Smoke test asset-api /api/assets
         run: |
           for i in 1 2 3 4 5; do
-            body=$(curl -s http://localhost:8082/api/assets)
+            body=$(curl -s http://localhost:8082/api/assets || true)
             echo "$body" | grep -q 'asset_type' && exit 0
-            echo "Attempt $i: $body"; sleep 3
+            echo "Attempt $i: $body"; sleep 5
           done
           exit 1
 
       - name: Smoke test admin-portal
         run: |
           for i in 1 2 3 4 5; do
-            body=$(curl -s http://localhost:8083/)
+            body=$(curl -s http://localhost:8083/ || true)
             echo "$body" | grep -q 'IT Asset Admin Portal' && exit 0
-            echo "Attempt $i: request did not contain expected text"; sleep 3
+            echo "Attempt $i: request failed or did not contain expected text"; sleep 5
           done
-          echo "Final response:"; echo "$body"
           exit 1
 
       - name: Dump service logs on failure
