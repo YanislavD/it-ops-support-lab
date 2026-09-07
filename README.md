@@ -24,13 +24,60 @@ This is a learning/portfolio project, built solo with AI assistance.
 is fully independent. This gives three distinct HTTP endpoints to monitor, plus a
 realistic failure mode (API up but DB down, API down but website fine, etc.).
 
+## Architecture
+
+```mermaid
+flowchart TB
+    subgraph apps["Module 1 — Application Services"]
+        website["corporate-website<br/>(nginx)"]
+        portal["admin-portal<br/>(Flask, :8083)"]
+        api["asset-api<br/>(Flask, :8082)"]
+        db[("asset-db<br/>(Postgres)")]
+        portal --> api --> db
+    end
+
+    subgraph mon["Module 2 — Monitoring & Alerting"]
+        bbe["blackbox-exporter"]
+        prom["prometheus"]
+        graf["grafana"]
+        am["alertmanager"]
+        amd["alertmanager-discord"]
+        bbe --> prom
+        prom --> graf
+        prom --> am
+        am --> amd
+    end
+
+    subgraph tix["Module 4 — Ticketing & Knowledge Base"]
+        bridge["ticket-bridge"]
+        ost["osticket<br/>(PHP, :8084)"]
+        ostdb[("osticket-db<br/>(MariaDB)")]
+        bridge --> ost --> ostdb
+    end
+
+    website -. probed every 15s .-> bbe
+    api -. probed every 15s .-> bbe
+    portal -. probed every 15s .-> bbe
+
+    am -- "fans out to both" --> amd
+    am --> bridge
+    amd --> discord[("Discord channel")]
+
+    ci["Module 3 — GitHub Actions CI/CD"] -. lint + build + smoke-test on every push .-> apps
+```
+
+All application/monitoring/ticketing services share one Docker bridge network
+(`lab`); only the ports in the table above are published to the host. Blackbox
+Exporter is the only thing that talks to the three app services over HTTP —
+Prometheus talks to Blackbox Exporter, never to the apps directly.
+
 ## Status
 
 - [x] Module 1 — Services & Docker Compose foundation
 - [x] Module 2 — Monitoring & Alerting (Prometheus, Blackbox Exporter, Grafana, Alertmanager)
 - [x] Module 3 — CI/CD (GitHub Actions)
 - [x] Module 4 — Ticketing & Support (incident → ticket → resolution, Knowledge Base)
-- [ ] Module 5 — Documentation (architecture diagram, demo video, incident report)
+- [x] Module 5 — Documentation (architecture diagram, demo walkthrough, incident report)
 
 ## Running locally
 
@@ -219,8 +266,18 @@ alert rules in `monitoring/prometheus/alert.rules.yml`:
   time trend, check `asset-db` load if it's `asset-api`, decide whether it's
   a transient spike or needs a restart.
 
-## Next steps
+## Documentation (Module 5)
 
-Module 5 wraps up the project with a full architecture diagram, a short demo
-video, and a written incident report walking through a simulated failure
-end-to-end using everything built in Modules 1-4.
+- **[Demo walkthrough](docs/demo-walkthrough.md)** — a screenshot-by-screenshot
+  walk through one real incident, captured live off this exact stack: healthy
+  baseline → `corporate-website` stopped → Grafana flips to DOWN → osTicket
+  ticket auto-created with Prometheus's own alert text → service restarted →
+  Grafana recovers → ticket closed with a resolution note.
+- **[Incident report](docs/incident-report.md)** — the same run, written up
+  in the format an IT support/NOC team would actually use: timeline, root
+  cause, impact, resolution, and follow-up.
+- Architecture diagram — see [Architecture](#architecture) above.
+
+This closes out the project as scoped in the original brief: containerized
+services, monitoring/alerting, CI/CD, an incident-to-ticket workflow with a
+Knowledge Base, and documentation of all of it.
