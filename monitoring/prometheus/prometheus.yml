@@ -36,6 +36,12 @@ scrape_configs:
       - targets: ["http://admin-portal:5001/"]
         labels:
           service: admin-portal
+      # EventApp (../EventApp) is a separate local project, not always running.
+      # Uncomment to include it in monitoring - it'll page every hour in
+      # Discord and hold an open osTicket ticket for as long as it's down.
+      # - targets: ["http://host.docker.internal:8080/actuator/health"]
+      #   labels:
+      #     service: event-app
     relabel_configs:
       - source_labels: [__address__]
         target_label: __param_target
